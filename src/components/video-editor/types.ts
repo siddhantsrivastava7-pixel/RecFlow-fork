@@ -14,6 +14,12 @@ export type WebcamMaskShape = "rectangle" | "circle" | "square" | "rounded";
 
 export const DEFAULT_WEBCAM_MASK_SHAPE: WebcamMaskShape = "rectangle";
 
+export type WebcamBackgroundMode = "none" | "blur" | "color" | "image";
+
+export const DEFAULT_WEBCAM_BACKGROUND_MODE: WebcamBackgroundMode = "none";
+export const DEFAULT_WEBCAM_BACKGROUND_COLOR = "#050505";
+export const DEFAULT_WEBCAM_BACKGROUND_IMAGE: string | null = null;
+
 export interface WebcamPosition {
 	cx: number; // normalized horizontal center (0-1)
 	cy: number; // normalized vertical center (0-1)

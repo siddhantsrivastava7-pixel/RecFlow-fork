@@ -12,6 +12,9 @@ import {
 	DEFAULT_CROP_REGION,
 	DEFAULT_FIGURE_DATA,
 	DEFAULT_PLAYBACK_SPEED,
+	DEFAULT_WEBCAM_BACKGROUND_COLOR,
+	DEFAULT_WEBCAM_BACKGROUND_IMAGE,
+	DEFAULT_WEBCAM_BACKGROUND_MODE,
 	DEFAULT_WEBCAM_LAYOUT_PRESET,
 	DEFAULT_WEBCAM_MASK_SHAPE,
 	DEFAULT_WEBCAM_POSITION,
@@ -21,6 +24,7 @@ import {
 	MIN_PLAYBACK_SPEED,
 	type SpeedRegion,
 	type TrimRegion,
+	type WebcamBackgroundMode,
 	type WebcamLayoutPreset,
 	type WebcamMaskShape,
 	type WebcamPosition,
@@ -41,6 +45,9 @@ export interface ProjectEditorState {
 	wallpaper: string;
 	shadowIntensity: number;
 	showBlur: boolean;
+	webcamBackgroundMode: WebcamBackgroundMode;
+	webcamBackgroundColor: string;
+	webcamBackgroundImage: string | null;
 	motionBlurAmount: number;
 	borderRadius: number;
 	padding: number;
@@ -74,6 +81,16 @@ function isFiniteNumber(value: unknown): value is number {
 
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
+}
+
+function normalizeWebcamBackgroundMode(editor: Partial<ProjectEditorState>): WebcamBackgroundMode {
+	const mode = editor.webcamBackgroundMode;
+	if (mode === "none" || mode === "blur" || mode === "color" || mode === "image") {
+		return mode;
+	}
+
+	const legacyBlur = (editor as { webcamBackgroundBlur?: unknown }).webcamBackgroundBlur;
+	return legacyBlur === true ? "blur" : DEFAULT_WEBCAM_BACKGROUND_MODE;
 }
 
 function isFileUrl(value: string): boolean {
@@ -332,6 +349,15 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 		wallpaper: typeof editor.wallpaper === "string" ? editor.wallpaper : WALLPAPER_PATHS[0],
 		shadowIntensity: typeof editor.shadowIntensity === "number" ? editor.shadowIntensity : 0,
 		showBlur: typeof editor.showBlur === "boolean" ? editor.showBlur : false,
+		webcamBackgroundMode: normalizeWebcamBackgroundMode(editor),
+		webcamBackgroundColor:
+			typeof editor.webcamBackgroundColor === "string" && editor.webcamBackgroundColor.trim()
+				? editor.webcamBackgroundColor
+				: DEFAULT_WEBCAM_BACKGROUND_COLOR,
+		webcamBackgroundImage:
+			typeof editor.webcamBackgroundImage === "string" && editor.webcamBackgroundImage.trim()
+				? editor.webcamBackgroundImage
+				: DEFAULT_WEBCAM_BACKGROUND_IMAGE,
 		motionBlurAmount: isFiniteNumber(editor.motionBlurAmount)
 			? clamp(editor.motionBlurAmount, 0, 1)
 			: typeof (editor as { motionBlurEnabled?: unknown }).motionBlurEnabled === "boolean"

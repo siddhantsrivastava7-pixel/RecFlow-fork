@@ -37,6 +37,7 @@ import {
 	type AnnotationRegion,
 	type SpeedRegion,
 	type TrimRegion,
+	type WebcamBackgroundMode,
 	ZOOM_DEPTH_SCALES,
 	type ZoomDepth,
 	type ZoomFocus,
@@ -65,6 +66,10 @@ import {
 	type MotionBlurState,
 } from "./videoPlayback/zoomTransform";
 
+const WEBCAM_FOREGROUND_MASK =
+	"radial-gradient(ellipse 52% 72% at 50% 42%, black 0%, black 58%, transparent 82%)";
+const WEBCAM_BACKGROUND_BLUR_PX = 14;
+
 interface VideoPlaybackProps {
 	videoPath: string;
 	webcamVideoPath?: string;
@@ -74,6 +79,9 @@ interface VideoPlaybackProps {
 	webcamPosition?: { cx: number; cy: number } | null;
 	onWebcamPositionChange?: (position: { cx: number; cy: number }) => void;
 	onWebcamPositionDragEnd?: () => void;
+	webcamBackgroundMode?: WebcamBackgroundMode;
+	webcamBackgroundColor?: string;
+	webcamBackgroundImage?: string | null;
 	onDurationChange: (duration: number) => void;
 	onTimeUpdate: (time: number) => void;
 	currentTime: number;
@@ -125,6 +133,9 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			webcamPosition,
 			onWebcamPositionChange,
 			onWebcamPositionDragEnd,
+			webcamBackgroundMode = "none",
+			webcamBackgroundColor = "#050505",
+			webcamBackgroundImage = null,
 			onDurationChange,
 			onTimeUpdate,
 			currentTime,
@@ -158,6 +169,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 	) => {
 		const videoRef = useRef<HTMLVideoElement | null>(null);
 		const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
+		const webcamBlurVideoRef = useRef<HTMLVideoElement | null>(null);
 		const containerRef = useRef<HTMLDivElement | null>(null);
 		const appRef = useRef<Application | null>(null);
 		const videoSpriteRef = useRef<Sprite | null>(null);
@@ -436,7 +448,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 
 		// ── Webcam PiP drag handlers ──
 
-		const handleWebcamPointerDown = (event: React.PointerEvent<HTMLVideoElement>) => {
+		const handleWebcamPointerDown = (event: React.PointerEvent<HTMLElement>) => {
 			if (isPlayingRef.current) return;
 			if (webcamLayoutPreset !== "picture-in-picture") return;
 			event.preventDefault();
@@ -452,7 +464,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			};
 		};
 
-		const handleWebcamPointerMove = (event: React.PointerEvent<HTMLVideoElement>) => {
+		const handleWebcamPointerMove = (event: React.PointerEvent<HTMLElement>) => {
 			if (!isDraggingWebcamRef.current) return;
 			event.preventDefault();
 			event.stopPropagation();
@@ -470,7 +482,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			onWebcamPositionChange({ cx, cy });
 		};
 
-		const handleWebcamPointerUp = (event: React.PointerEvent<HTMLVideoElement>) => {
+		const handleWebcamPointerUp = (event: React.PointerEvent<HTMLElement>) => {
 			if (!isDraggingWebcamRef.current) return;
 			isDraggingWebcamRef.current = false;
 			try {
@@ -1098,8 +1110,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		}, [webcamVideoPath]);
 
 		useEffect(() => {
-			const webcamVideo = webcamVideoRef.current;
-			if (!webcamVideo || !webcamVideoPath) {
+			const webcamVideos = [
+				webcamVideoRef.current,
+				webcamBackgroundMode === "blur" ? webcamBlurVideoRef.current : null,
+			].filter(
+				(video): video is HTMLVideoElement => Boolean(video),
+			);
+			if (webcamVideos.length === 0 || !webcamVideoPath) {
 				return;
 			}
 
@@ -1107,34 +1124,50 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				speedRegions.find(
 					(region) => currentTime * 1000 >= region.startMs && currentTime * 1000 < region.endMs,
 				) ?? null;
-			webcamVideo.playbackRate = activeSpeedRegion ? activeSpeedRegion.speed : 1;
+			const playbackRate = activeSpeedRegion ? activeSpeedRegion.speed : 1;
+			for (const video of webcamVideos) {
+				video.playbackRate = playbackRate;
+			}
 
 			if (!isPlaying) {
-				webcamVideo.pause();
-				if (Math.abs(webcamVideo.currentTime - currentTime) > 0.05) {
-					webcamVideo.currentTime = currentTime;
+				for (const video of webcamVideos) {
+					video.pause();
+					if (Math.abs(video.currentTime - currentTime) > 0.05) {
+						video.currentTime = currentTime;
+					}
 				}
 				return;
 			}
 
-			if (Math.abs(webcamVideo.currentTime - currentTime) > 0.15) {
-				webcamVideo.currentTime = currentTime;
+			for (const video of webcamVideos) {
+				if (Math.abs(video.currentTime - currentTime) > 0.15) {
+					video.currentTime = currentTime;
+				}
 			}
 
-			webcamVideo.play().catch(() => {
-				// Ignore webcam autoplay restoration failures.
-			});
-		}, [currentTime, isPlaying, speedRegions, webcamVideoPath]);
+			for (const video of webcamVideos) {
+				video.play().catch(() => {
+					// Ignore webcam autoplay restoration failures.
+				});
+			}
+		}, [currentTime, isPlaying, speedRegions, webcamVideoPath, webcamBackgroundMode]);
 
 		useEffect(() => {
-			const webcamVideo = webcamVideoRef.current;
-			if (!webcamVideo || !webcamVideoPath) {
+			const webcamVideos = [
+				webcamVideoRef.current,
+				webcamBackgroundMode === "blur" ? webcamBlurVideoRef.current : null,
+			].filter(
+				(video): video is HTMLVideoElement => Boolean(video),
+			);
+			if (webcamVideos.length === 0 || !webcamVideoPath) {
 				return;
 			}
 
-			webcamVideo.pause();
-			webcamVideo.currentTime = 0;
-		}, [webcamVideoPath]);
+			for (const video of webcamVideos) {
+				video.pause();
+				video.currentTime = 0;
+			}
+		}, [webcamVideoPath, webcamBackgroundMode]);
 
 		useEffect(() => {
 			let mounted = true;
@@ -1247,6 +1280,14 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					(() => {
 						const clipPath = getCssClipPath(webcamLayout?.maskShape ?? "rectangle");
 						const useClipPath = !!clipPath;
+						const mediaClipStyle: React.CSSProperties = {
+							borderRadius: useClipPath ? 0 : (webcamLayout?.borderRadius ?? 0),
+							clipPath: clipPath ?? undefined,
+							boxShadow: useClipPath ? "none" : webcamCssBoxShadow,
+							backgroundColor: "#000",
+						};
+						const hasSyntheticWebcamBackground = webcamBackgroundMode !== "none";
+						const webcamClassName = `w-full h-full object-cover ${webcamLayoutPreset === "picture-in-picture" ? "cursor-grab active:cursor-grabbing" : "pointer-events-none"}`;
 						return (
 							<div
 								className="absolute"
@@ -1263,24 +1304,57 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 											: undefined,
 								}}
 							>
-								<video
-									ref={webcamVideoRef}
-									src={webcamVideoPath}
-									className={`w-full h-full object-cover ${webcamLayoutPreset === "picture-in-picture" ? "cursor-grab active:cursor-grabbing" : "pointer-events-none"}`}
-									style={{
-										borderRadius: useClipPath ? 0 : (webcamLayout?.borderRadius ?? 0),
-										clipPath: clipPath ?? undefined,
-										boxShadow: useClipPath ? "none" : webcamCssBoxShadow,
-										backgroundColor: "#000",
-									}}
+								<div
+									className={`relative w-full h-full overflow-hidden ${webcamClassName}`}
+									style={mediaClipStyle}
 									onPointerDown={handleWebcamPointerDown}
 									onPointerMove={handleWebcamPointerMove}
 									onPointerUp={handleWebcamPointerUp}
 									onPointerLeave={handleWebcamPointerUp}
-									muted
-									preload="metadata"
-									playsInline
-								/>
+								>
+									{webcamBackgroundMode === "blur" && (
+										<video
+											ref={webcamBlurVideoRef}
+											src={webcamVideoPath}
+											className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+											style={{
+												filter: `blur(${WEBCAM_BACKGROUND_BLUR_PX}px)`,
+												transform: "scale(1.08)",
+											}}
+											muted
+											preload="metadata"
+											playsInline
+										/>
+									)}
+									{webcamBackgroundMode === "color" && (
+										<div
+											className="absolute inset-0 pointer-events-none"
+											style={{ backgroundColor: webcamBackgroundColor }}
+										/>
+									)}
+									{webcamBackgroundMode === "image" && webcamBackgroundImage && (
+										<div
+											className="absolute inset-0 bg-cover bg-center pointer-events-none"
+											style={{ backgroundImage: `url(${webcamBackgroundImage})` }}
+										/>
+									)}
+									<video
+										ref={webcamVideoRef}
+										src={webcamVideoPath}
+										className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+										style={
+											hasSyntheticWebcamBackground
+												? {
+														maskImage: WEBCAM_FOREGROUND_MASK,
+														WebkitMaskImage: WEBCAM_FOREGROUND_MASK,
+													}
+												: undefined
+										}
+										muted
+										preload="metadata"
+										playsInline
+									/>
+								</div>
 							</div>
 						);
 					})()}

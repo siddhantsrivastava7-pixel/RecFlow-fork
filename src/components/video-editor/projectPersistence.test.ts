@@ -33,6 +33,9 @@ describe("projectPersistence media compatibility", () => {
 				wallpaper: "/wallpapers/wallpaper1.jpg",
 				shadowIntensity: 0,
 				showBlur: false,
+				webcamBackgroundMode: "blur",
+				webcamBackgroundColor: "#050505",
+				webcamBackgroundImage: null,
 				motionBlurAmount: 0,
 				borderRadius: 0,
 				padding: 50,
@@ -44,6 +47,8 @@ describe("projectPersistence media compatibility", () => {
 				aspectRatio: "16:9",
 				webcamLayoutPreset: "picture-in-picture",
 				webcamMaskShape: "circle",
+				webcamSizePreset: 25,
+				webcamPosition: null,
 				exportQuality: "good",
 				exportFormat: "mp4",
 				gifFrameRate: 15,
@@ -66,6 +71,14 @@ describe("projectPersistence media compatibility", () => {
 			normalizeProjectEditor({ webcamMaskShape: "not-a-real-shape" as never }).webcamMaskShape,
 		).toBe("rectangle");
 	});
+
+	it("normalizes legacy webcam background blur to the new background mode", () => {
+		expect(
+			normalizeProjectEditor({
+				webcamBackgroundBlur: true,
+			} as never).webcamBackgroundMode,
+		).toBe("blur");
+	});
 });
 
 it("creates stable snapshots for identical project state", () => {
@@ -77,6 +90,9 @@ it("creates stable snapshots for identical project state", () => {
 		wallpaper: "/wallpapers/wallpaper1.jpg",
 		shadowIntensity: 0,
 		showBlur: false,
+		webcamBackgroundMode: "blur",
+		webcamBackgroundColor: "#050505",
+		webcamBackgroundImage: null,
 		motionBlurAmount: 0,
 		borderRadius: 0,
 		padding: 50,
@@ -88,6 +104,8 @@ it("creates stable snapshots for identical project state", () => {
 		aspectRatio: "16:9",
 		webcamLayoutPreset: "picture-in-picture",
 		webcamMaskShape: "circle",
+		webcamSizePreset: 25,
+		webcamPosition: null,
 		exportQuality: "good",
 		exportFormat: "mp4",
 		gifFrameRate: 15,

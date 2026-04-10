@@ -22,7 +22,12 @@
 		"defaultCamera": "Cámara predeterminada",
 		"searching": "Buscando...",
 		"noneFound": "No se encontró cámara",
-		"unavailable": "Cámara no disponible"
+		"unavailable": "Cámara no disponible",
+		"previewLoading": "Starting camera...",
+		"previewUnavailable": "Preview unavailable",
+		"previewOff": "Preview off",
+		"showPreview": "Show webcam preview",
+		"hidePreview": "Hide webcam preview"
 	},
 	"sourceSelector": {
 		"loading": "Cargando fuentes...",

@@ -24,7 +24,16 @@
 		"selectPreset": "Ön ayar seçin",
 		"pictureInPicture": "Resim İçinde Resim",
 		"verticalStack": "Dikey Yığın",
-		"webcamShape": "Kamera Şekli"
+		"webcamShape": "Kamera Şekli",
+		"webcamSize": "Webcam Size",
+		"webcamBackground": "Webcam Background",
+		"webcamBackgroundHint": "Keep the camera normal, blur it, or replace the area around you",
+		"webcamBackgroundNone": "Normal",
+		"webcamBackgroundBlur": "Blur",
+		"webcamBackgroundColor": "Solid Color",
+		"webcamBackgroundImage": "Custom Image",
+		"webcamBackgroundUploadImage": "Upload Image",
+		"webcamBackgroundReplaceImage": "Replace Image"
 	},
 	"effects": {
 		"title": "Video Efektleri",
@@ -86,6 +95,7 @@
 		"starOnGithub": "GitHub'da Yıldızla"
 	},
 	"imageUpload": {
+		"imageOnly": "Please upload a JPG, PNG, or WebP image file.",
 		"invalidFileType": "Geçersiz dosya türü",
 		"jpgOnly": "Lütfen bir JPG veya JPEG görüntü dosyası yükleyin.",
 		"uploadSuccess": "Özel görüntü başarıyla yüklendi!",

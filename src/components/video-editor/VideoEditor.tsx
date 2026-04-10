@@ -92,6 +92,9 @@ export default function VideoEditor() {
 		wallpaper,
 		shadowIntensity,
 		showBlur,
+		webcamBackgroundMode,
+		webcamBackgroundColor,
+		webcamBackgroundImage,
 		motionBlurAmount,
 		borderRadius,
 		padding,
@@ -205,6 +208,9 @@ export default function VideoEditor() {
 				wallpaper: normalizedEditor.wallpaper,
 				shadowIntensity: normalizedEditor.shadowIntensity,
 				showBlur: normalizedEditor.showBlur,
+				webcamBackgroundMode: normalizedEditor.webcamBackgroundMode,
+				webcamBackgroundColor: normalizedEditor.webcamBackgroundColor,
+				webcamBackgroundImage: normalizedEditor.webcamBackgroundImage,
 				motionBlurAmount: normalizedEditor.motionBlurAmount,
 				borderRadius: normalizedEditor.borderRadius,
 				padding: normalizedEditor.padding,
@@ -273,6 +279,9 @@ export default function VideoEditor() {
 			wallpaper,
 			shadowIntensity,
 			showBlur,
+			webcamBackgroundMode,
+			webcamBackgroundColor,
+			webcamBackgroundImage,
 			motionBlurAmount,
 			borderRadius,
 			padding,
@@ -284,6 +293,7 @@ export default function VideoEditor() {
 			aspectRatio,
 			webcamLayoutPreset,
 			webcamMaskShape,
+			webcamSizePreset,
 			webcamPosition,
 			exportQuality,
 			exportFormat,
@@ -296,6 +306,9 @@ export default function VideoEditor() {
 		wallpaper,
 		shadowIntensity,
 		showBlur,
+		webcamBackgroundMode,
+		webcamBackgroundColor,
+		webcamBackgroundImage,
 		motionBlurAmount,
 		borderRadius,
 		padding,
@@ -417,6 +430,9 @@ export default function VideoEditor() {
 				wallpaper,
 				shadowIntensity,
 				showBlur,
+				webcamBackgroundMode,
+				webcamBackgroundColor,
+				webcamBackgroundImage,
 				motionBlurAmount,
 				borderRadius,
 				padding,
@@ -473,6 +489,9 @@ export default function VideoEditor() {
 			wallpaper,
 			shadowIntensity,
 			showBlur,
+			webcamBackgroundMode,
+			webcamBackgroundColor,
+			webcamBackgroundImage,
 			motionBlurAmount,
 			borderRadius,
 			padding,
@@ -1214,6 +1233,9 @@ export default function VideoEditor() {
 						showShadow: shadowIntensity > 0,
 						shadowIntensity,
 						showBlur,
+						webcamBackgroundMode,
+						webcamBackgroundColor,
+						webcamBackgroundImage,
 						motionBlurAmount,
 						borderRadius,
 						padding,
@@ -1349,6 +1371,9 @@ export default function VideoEditor() {
 						showShadow: shadowIntensity > 0,
 						shadowIntensity,
 						showBlur,
+						webcamBackgroundMode,
+						webcamBackgroundColor,
+						webcamBackgroundImage,
 						motionBlurAmount,
 						borderRadius,
 						padding,
@@ -1418,6 +1443,9 @@ export default function VideoEditor() {
 			speedRegions,
 			shadowIntensity,
 			showBlur,
+			webcamBackgroundMode,
+			webcamBackgroundColor,
+			webcamBackgroundImage,
 			motionBlurAmount,
 			borderRadius,
 			padding,
@@ -1669,6 +1697,9 @@ export default function VideoEditor() {
 											showShadow={shadowIntensity > 0}
 											shadowIntensity={shadowIntensity}
 											showBlur={showBlur}
+											webcamBackgroundMode={webcamBackgroundMode}
+											webcamBackgroundColor={webcamBackgroundColor}
+											webcamBackgroundImage={webcamBackgroundImage}
 											motionBlurAmount={motionBlurAmount}
 											borderRadius={borderRadius}
 											padding={padding}
@@ -1779,6 +1810,22 @@ export default function VideoEditor() {
 						onShadowCommit={commitState}
 						showBlur={showBlur}
 						onBlurChange={(v) => pushState({ showBlur: v })}
+						webcamBackgroundMode={webcamBackgroundMode}
+						onWebcamBackgroundModeChange={(mode) => pushState({ webcamBackgroundMode: mode })}
+						webcamBackgroundColor={webcamBackgroundColor}
+						onWebcamBackgroundColorChange={(color) =>
+							pushState({
+								webcamBackgroundMode: "color",
+								webcamBackgroundColor: color,
+							})
+						}
+						webcamBackgroundImage={webcamBackgroundImage}
+						onWebcamBackgroundImageChange={(image) =>
+							pushState({
+								webcamBackgroundMode: image ? "image" : "none",
+								webcamBackgroundImage: image,
+							})
+						}
 						motionBlurAmount={motionBlurAmount}
 						onMotionBlurChange={(v) => updateState({ motionBlurAmount: v })}
 						onMotionBlurCommit={commitState}

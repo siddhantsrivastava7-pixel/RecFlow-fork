@@ -12,6 +12,7 @@ import type {
 	AnnotationRegion,
 	CropRegion,
 	SpeedRegion,
+	WebcamBackgroundMode,
 	WebcamLayoutPreset,
 	WebcamSizePreset,
 	ZoomDepth,
@@ -62,6 +63,9 @@ interface FrameRenderConfig {
 	showShadow: boolean;
 	shadowIntensity: number;
 	showBlur: boolean;
+	webcamBackgroundMode?: WebcamBackgroundMode;
+	webcamBackgroundColor?: string;
+	webcamBackgroundImage?: string | null;
 	motionBlurAmount?: number;
 	borderRadius?: number;
 	padding?: number;
@@ -116,6 +120,13 @@ export class FrameRenderer {
 	private compositeCtx: CanvasRenderingContext2D | null = null;
 	private rasterCanvas: HTMLCanvasElement | null = null;
 	private rasterCtx: CanvasRenderingContext2D | null = null;
+	private webcamBlurCanvas: HTMLCanvasElement | null = null;
+	private webcamBlurCtx: CanvasRenderingContext2D | null = null;
+	private webcamForegroundCanvas: HTMLCanvasElement | null = null;
+	private webcamForegroundCtx: CanvasRenderingContext2D | null = null;
+	private webcamMaskCanvas: HTMLCanvasElement | null = null;
+	private webcamMaskCtx: CanvasRenderingContext2D | null = null;
+	private webcamBackgroundImageElement: HTMLImageElement | null = null;
 	private config: FrameRenderConfig;
 	private animationState: AnimationState;
 	private layoutCache: LayoutCache | null = null;
@@ -174,6 +185,7 @@ export class FrameRenderer {
 
 		// Setup background (render separately, not in PixiJS)
 		await this.setupBackground();
+		await this.setupWebcamBackgroundImage();
 
 		// Setup blur filter for video container
 		this.blurFilter = new BlurFilter();
@@ -344,6 +356,45 @@ export class FrameRenderer {
 
 		// Store the background canvas for compositing
 		this.backgroundSprite = bgCanvas;
+	}
+
+	private resolveImageUrl(imagePath: string): string {
+		if (
+			imagePath.startsWith("http") ||
+			imagePath.startsWith("file://") ||
+			imagePath.startsWith("data:")
+		) {
+			return imagePath;
+		}
+
+		return imagePath.startsWith("/")
+			? window.location.origin + imagePath
+			: window.location.origin + `/${imagePath}`;
+	}
+
+	private async setupWebcamBackgroundImage(): Promise<void> {
+		if (this.config.webcamBackgroundMode !== "image" || !this.config.webcamBackgroundImage) {
+			this.webcamBackgroundImageElement = null;
+			return;
+		}
+
+		const imageUrl = this.resolveImageUrl(this.config.webcamBackgroundImage);
+		const img = new Image();
+		if (imageUrl.startsWith("http") && !imageUrl.startsWith(window.location.origin)) {
+			img.crossOrigin = "anonymous";
+		}
+
+		try {
+			await new Promise<void>((resolve, reject) => {
+				img.onload = () => resolve();
+				img.onerror = () => reject(new Error(`Failed to load webcam background image: ${imageUrl}`));
+				img.src = imageUrl;
+			});
+			this.webcamBackgroundImageElement = img;
+		} catch (error) {
+			console.warn("[FrameRenderer] Webcam background image unavailable, using color fallback:", error);
+			this.webcamBackgroundImageElement = null;
+		}
 	}
 
 	async renderFrame(
@@ -724,6 +775,144 @@ export class FrameRenderer {
 		return this.rasterCanvas;
 	}
 
+	private ensureWebcamEffectCanvases(width: number, height: number): boolean {
+		if (!this.webcamBlurCanvas) {
+			this.webcamBlurCanvas = document.createElement("canvas");
+			this.webcamBlurCtx = this.webcamBlurCanvas.getContext("2d");
+		}
+		if (!this.webcamForegroundCanvas) {
+			this.webcamForegroundCanvas = document.createElement("canvas");
+			this.webcamForegroundCtx = this.webcamForegroundCanvas.getContext("2d");
+		}
+		if (!this.webcamMaskCanvas) {
+			this.webcamMaskCanvas = document.createElement("canvas");
+			this.webcamMaskCtx = this.webcamMaskCanvas.getContext("2d");
+		}
+
+		const canvases = [
+			this.webcamBlurCanvas,
+			this.webcamForegroundCanvas,
+			this.webcamMaskCanvas,
+		];
+		for (const canvas of canvases) {
+			if (canvas.width !== width || canvas.height !== height) {
+				canvas.width = width;
+				canvas.height = height;
+			}
+		}
+
+		return Boolean(this.webcamBlurCtx && this.webcamForegroundCtx && this.webcamMaskCtx);
+	}
+
+	private drawWebcamFrame(
+		ctx: CanvasRenderingContext2D,
+		webcamFrame: VideoFrame,
+		webcamRect: StyledRenderRect,
+	): void {
+		const mode = this.config.webcamBackgroundMode ?? "none";
+		if (mode === "none") {
+			ctx.drawImage(
+				webcamFrame as unknown as CanvasImageSource,
+				webcamRect.x,
+				webcamRect.y,
+				webcamRect.width,
+				webcamRect.height,
+			);
+			return;
+		}
+
+		const width = Math.max(1, Math.round(webcamRect.width));
+		const height = Math.max(1, Math.round(webcamRect.height));
+		if (!this.ensureWebcamEffectCanvases(width, height)) {
+			ctx.drawImage(
+				webcamFrame as unknown as CanvasImageSource,
+				webcamRect.x,
+				webcamRect.y,
+				webcamRect.width,
+				webcamRect.height,
+			);
+			return;
+		}
+
+		const blurCtx = this.webcamBlurCtx!;
+		const foregroundCtx = this.webcamForegroundCtx!;
+		const maskCtx = this.webcamMaskCtx!;
+		const blurCanvas = this.webcamBlurCanvas!;
+		const foregroundCanvas = this.webcamForegroundCanvas!;
+		const maskCanvas = this.webcamMaskCanvas!;
+		const image = webcamFrame as unknown as CanvasImageSource;
+
+		blurCtx.clearRect(0, 0, width, height);
+		if (mode === "blur") {
+			const blurPx = Math.max(8, Math.round(Math.min(width, height) * 0.08));
+			const expansion = Math.ceil(blurPx * 1.5);
+			blurCtx.save();
+			blurCtx.filter = `blur(${blurPx}px)`;
+			blurCtx.drawImage(image, -expansion, -expansion, width + expansion * 2, height + expansion * 2);
+			blurCtx.restore();
+		} else if (mode === "image" && this.webcamBackgroundImageElement) {
+			this.drawCoverImage(blurCtx, this.webcamBackgroundImageElement, width, height);
+		} else {
+			blurCtx.fillStyle = this.config.webcamBackgroundColor || "#050505";
+			blurCtx.fillRect(0, 0, width, height);
+		}
+
+		foregroundCtx.clearRect(0, 0, width, height);
+		foregroundCtx.drawImage(image, 0, 0, width, height);
+
+		maskCtx.clearRect(0, 0, width, height);
+		maskCtx.save();
+		maskCtx.fillStyle = "#000";
+		maskCtx.shadowColor = "#000";
+		maskCtx.shadowBlur = Math.max(12, Math.round(Math.min(width, height) * 0.16));
+		maskCtx.beginPath();
+		maskCtx.ellipse(
+			width * 0.5,
+			height * 0.42,
+			width * 0.34,
+			height * 0.4,
+			0,
+			0,
+			Math.PI * 2,
+		);
+		maskCtx.fill();
+		maskCtx.restore();
+
+		foregroundCtx.save();
+		foregroundCtx.globalCompositeOperation = "destination-in";
+		foregroundCtx.drawImage(maskCanvas, 0, 0);
+		foregroundCtx.restore();
+
+		blurCtx.drawImage(foregroundCanvas, 0, 0);
+		ctx.drawImage(blurCanvas, webcamRect.x, webcamRect.y, webcamRect.width, webcamRect.height);
+	}
+
+	private drawCoverImage(
+		ctx: CanvasRenderingContext2D,
+		image: HTMLImageElement,
+		width: number,
+		height: number,
+	): void {
+		const imageAspect = image.width / image.height;
+		const canvasAspect = width / height;
+		let drawWidth = width;
+		let drawHeight = height;
+		let drawX = 0;
+		let drawY = 0;
+
+		if (imageAspect > canvasAspect) {
+			drawHeight = height;
+			drawWidth = drawHeight * imageAspect;
+			drawX = (width - drawWidth) / 2;
+		} else {
+			drawWidth = width;
+			drawHeight = drawWidth / imageAspect;
+			drawY = (height - drawHeight) / 2;
+		}
+
+		ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+	}
+
 	private compositeWithShadows(webcamFrame?: VideoFrame | null): void {
 		if (!this.compositeCanvas || !this.compositeCtx || !this.app) return;
 
@@ -803,13 +992,7 @@ export class FrameRenderer {
 			ctx.fillStyle = "#000000";
 			ctx.fill();
 			ctx.clip();
-			ctx.drawImage(
-				webcamFrame as unknown as CanvasImageSource,
-				webcamRect.x,
-				webcamRect.y,
-				webcamRect.width,
-				webcamRect.height,
-			);
+			this.drawWebcamFrame(ctx, webcamFrame, webcamRect);
 			ctx.restore();
 		}
 	}

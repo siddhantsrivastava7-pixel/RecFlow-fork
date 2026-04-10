@@ -52,6 +52,7 @@ process.env.APP_ROOT = path.join(__dirname, "..");
 export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
+app.setName("RecFlow");
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 	? path.join(process.env.APP_ROOT, "public")
@@ -212,7 +213,7 @@ function getTrayIcon(filename: string) {
 function updateTrayMenu(recording: boolean = false) {
 	if (!tray) return;
 	const trayIcon = recording ? recordingTrayIcon : defaultTrayIcon;
-	const trayToolTip = recording ? `Recording: ${selectedSourceName}` : "OpenScreen";
+	const trayToolTip = recording ? `Recording: ${selectedSourceName}` : "RecFlow";
 	const menuTemplate = recording
 		? [
 				{

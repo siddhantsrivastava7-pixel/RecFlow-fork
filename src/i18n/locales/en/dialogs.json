@@ -60,12 +60,12 @@
 		"saveGif": "Save Exported GIF",
 		"saveVideo": "Save Exported Video",
 		"selectVideo": "Select Video File",
-		"saveProject": "Save OpenScreen Project",
-		"openProject": "Open OpenScreen Project",
+		"saveProject": "Save RecFlow Project",
+		"openProject": "Open RecFlow Project",
 		"gifImage": "GIF Image",
 		"mp4Video": "MP4 Video",
 		"videoFiles": "Video Files",
-		"openscreenProject": "OpenScreen Project",
+		"openscreenProject": "RecFlow Project",
 		"allFiles": "All Files"
 	}
 }

@@ -27,7 +27,15 @@
 		"pictureInPicture": "画中画",
 		"verticalStack": "垂直堆叠",
 		"webcamShape": "摄像头形状",
-		"webcamSize": "摄像头大小"
+		"webcamSize": "摄像头大小",
+		"webcamBackground": "Webcam Background",
+		"webcamBackgroundHint": "Keep the camera normal, blur it, or replace the area around you",
+		"webcamBackgroundNone": "Normal",
+		"webcamBackgroundBlur": "Blur",
+		"webcamBackgroundColor": "Solid Color",
+		"webcamBackgroundImage": "Custom Image",
+		"webcamBackgroundUploadImage": "Upload Image",
+		"webcamBackgroundReplaceImage": "Replace Image"
 	},
 	"effects": {
 		"title": "视频效果",
@@ -89,6 +97,7 @@
 		"starOnGithub": "在 GitHub 上加星"
 	},
 	"imageUpload": {
+		"imageOnly": "Please upload a JPG, PNG, or WebP image file.",
 		"invalidFileType": "无效的文件类型",
 		"jpgOnly": "请上传 JPG 或 JPEG 格式的图片文件。",
 		"uploadSuccess": "自定义图片上传成功！",

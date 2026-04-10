@@ -1,5 +1,5 @@
 import { ChevronDown, Languages } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BsPauseCircle, BsPlayCircle, BsRecordCircle } from "react-icons/bs";
 import { FaRegStopCircle } from "react-icons/fa";
 import { FaFolderOpen } from "react-icons/fa6";
@@ -10,6 +10,8 @@ import {
 	MdMicOff,
 	MdMonitor,
 	MdRestartAlt,
+	MdVisibility,
+	MdVisibilityOff,
 	MdVideocam,
 	MdVideocamOff,
 	MdVideoFile,
@@ -25,6 +27,7 @@ import { useAudioLevelMeter } from "../../hooks/useAudioLevelMeter";
 import { useCameraDevices } from "../../hooks/useCameraDevices";
 import { useMicrophoneDevices } from "../../hooks/useMicrophoneDevices";
 import { useScreenRecorder } from "../../hooks/useScreenRecorder";
+import { useWebcamPreview } from "../../hooks/useWebcamPreview";
 import { requestCameraAccess } from "../../lib/requestCameraAccess";
 import { formatTimePadded } from "../../utils/timeUtils";
 import { AudioLevelMeter } from "../ui/audio-level-meter";
@@ -42,6 +45,8 @@ const ICON_CONFIG = {
 	micOff: { icon: MdMicOff, size: ICON_SIZE },
 	webcamOn: { icon: MdVideocam, size: ICON_SIZE },
 	webcamOff: { icon: MdVideocamOff, size: ICON_SIZE },
+	previewOn: { icon: MdVisibility, size: ICON_SIZE },
+	previewOff: { icon: MdVisibilityOff, size: ICON_SIZE },
 	pause: { icon: BsPauseCircle, size: ICON_SIZE },
 	resume: { icon: BsPlayCircle, size: ICON_SIZE },
 	stop: { icon: FaRegStopCircle, size: ICON_SIZE },
@@ -97,6 +102,7 @@ export function LaunchWindow() {
 		setWebcamEnabled,
 		webcamDeviceId,
 		setWebcamDeviceId,
+		setWebcamPreviewStream,
 	} = useScreenRecorder();
 
 	const showMicControls = microphoneEnabled && !recording;
@@ -109,6 +115,8 @@ export function LaunchWindow() {
 	const [isWebcamHovered, setIsWebcamHovered] = useState(false);
 	const [isWebcamFocused, setIsWebcamFocused] = useState(false);
 	const webcamExpanded = isWebcamHovered || isWebcamFocused;
+	const [webcamPreviewVisible, setWebcamPreviewVisible] = useState(true);
+	const webcamPreviewVideoRef = useRef<HTMLVideoElement | null>(null);
 
 	const {
 		devices: micDevices,
@@ -134,11 +142,27 @@ export function LaunchWindow() {
 				? t("webcam.noneFound")
 				: cameraDevices.find((d) => d.deviceId === (webcamDeviceId || selectedCameraId))?.label ||
 					t("webcam.defaultCamera");
+	const selectedPreviewCameraId = webcamDeviceId || selectedCameraId || undefined;
+	const {
+		stream: webcamPreviewStream,
+		isLoading: isWebcamPreviewLoading,
+		error: webcamPreviewError,
+	} = useWebcamPreview(webcamEnabled && webcamPreviewVisible, selectedPreviewCameraId);
 
 	const { level } = useAudioLevelMeter({
 		enabled: showMicControls,
 		deviceId: microphoneDeviceId,
 	});
+
+	useEffect(() => {
+		setWebcamPreviewStream(webcamPreviewStream);
+	}, [setWebcamPreviewStream, webcamPreviewStream]);
+
+	useEffect(() => {
+		if (webcamPreviewVideoRef.current) {
+			webcamPreviewVideoRef.current.srcObject = webcamPreviewStream;
+		}
+	}, [webcamPreviewStream]);
 
 	useEffect(() => {
 		if (selectedMicId && selectedMicId !== "default") {
@@ -151,6 +175,12 @@ export function LaunchWindow() {
 			setWebcamDeviceId(selectedCameraId);
 		}
 	}, [selectedCameraId, setWebcamDeviceId]);
+
+	useEffect(() => {
+		if (!webcamEnabled) {
+			setWebcamPreviewVisible(true);
+		}
+	}, [webcamEnabled]);
 
 	useEffect(() => {
 		if (!import.meta.env.DEV) {
@@ -375,6 +405,30 @@ export function LaunchWindow() {
 			)}
 
 			{/* HUD bar — fixed at bottom center, viewport-relative, never moves */}
+			{webcamEnabled && webcamPreviewVisible && (
+				<div
+					className={`fixed right-4 ${recording ? "bottom-[76px]" : "bottom-[108px]"} w-[168px] aspect-video overflow-hidden rounded-lg border border-white/15 bg-black/70 shadow-2xl ${styles.electronNoDrag}`}
+				>
+					{webcamPreviewStream ? (
+						<video
+							ref={webcamPreviewVideoRef}
+							className="w-full h-full object-cover scale-x-[-1]"
+							autoPlay
+							muted
+							playsInline
+						/>
+					) : (
+						<div className="w-full h-full flex items-center justify-center px-3 text-center text-[10px] text-white/50">
+							{isWebcamPreviewLoading
+								? t("webcam.previewLoading")
+								: webcamPreviewError
+									? t("webcam.previewUnavailable")
+									: t("webcam.previewOff")}
+						</div>
+					)}
+				</div>
+			)}
+
 			<div
 				className={`fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2 py-1.5 rounded-full shadow-hud-bar bg-gradient-to-br from-[rgba(28,28,36,0.97)] to-[rgba(18,18,26,0.96)] backdrop-blur-[16px] backdrop-saturate-[140%] border border-[rgba(80,80,120,0.25)]`}
 			>
@@ -429,6 +483,21 @@ export function LaunchWindow() {
 							? getIcon("webcamOn", "text-green-400")
 							: getIcon("webcamOff", "text-white/40")}
 					</button>
+					{webcamEnabled && (
+						<button
+							className={`${hudIconBtnClasses} ${webcamPreviewVisible ? "drop-shadow-[0_0_4px_rgba(74,222,128,0.4)]" : ""}`}
+							onClick={() => setWebcamPreviewVisible((visible) => !visible)}
+							title={
+								webcamPreviewVisible
+									? t("webcam.hidePreview")
+									: t("webcam.showPreview")
+							}
+						>
+							{webcamPreviewVisible
+								? getIcon("previewOn", "text-green-400")
+								: getIcon("previewOff", "text-white/40")}
+						</button>
+					)}
 				</div>
 
 				{/* Record/Stop group */}

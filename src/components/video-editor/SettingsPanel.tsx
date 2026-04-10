@@ -49,6 +49,7 @@ import type {
 	AnnotationType,
 	CropRegion,
 	FigureData,
+	WebcamBackgroundMode,
 	PlaybackSpeed,
 	WebcamLayoutPreset,
 	WebcamMaskShape,
@@ -216,6 +217,12 @@ interface SettingsPanelProps {
 	hasWebcam?: boolean;
 	webcamLayoutPreset?: WebcamLayoutPreset;
 	onWebcamLayoutPresetChange?: (preset: WebcamLayoutPreset) => void;
+	webcamBackgroundMode?: WebcamBackgroundMode;
+	onWebcamBackgroundModeChange?: (mode: WebcamBackgroundMode) => void;
+	webcamBackgroundColor?: string;
+	onWebcamBackgroundColorChange?: (color: string) => void;
+	webcamBackgroundImage?: string | null;
+	onWebcamBackgroundImageChange?: (image: string | null) => void;
 	webcamMaskShape?: import("./types").WebcamMaskShape;
 	onWebcamMaskShapeChange?: (shape: import("./types").WebcamMaskShape) => void;
 	webcamSizePreset?: WebcamSizePreset;
@@ -292,6 +299,12 @@ export function SettingsPanel({
 	hasWebcam = false,
 	webcamLayoutPreset = "picture-in-picture",
 	onWebcamLayoutPresetChange,
+	webcamBackgroundMode = "none",
+	onWebcamBackgroundModeChange,
+	webcamBackgroundColor = "#050505",
+	onWebcamBackgroundColorChange,
+	webcamBackgroundImage = null,
+	onWebcamBackgroundImageChange,
 	webcamMaskShape = "rectangle",
 	onWebcamMaskShapeChange,
 	webcamSizePreset = DEFAULT_WEBCAM_SIZE_PRESET,
@@ -302,6 +315,7 @@ export function SettingsPanel({
 	const [wallpaperPaths, setWallpaperPaths] = useState<string[]>([]);
 	const [customImages, setCustomImages] = useState<string[]>([]);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const webcamBackgroundFileInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		let mounted = true;
@@ -490,6 +504,37 @@ export function SettingsPanel({
 
 		reader.readAsDataURL(file);
 		// Reset input so the same file can be selected again
+		event.target.value = "";
+	};
+
+	const handleWebcamBackgroundImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const files = event.target.files;
+		if (!files || files.length === 0) return;
+
+		const file = files[0];
+		const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+		if (!validTypes.includes(file.type)) {
+			toast.error(t("imageUpload.invalidFileType"), {
+				description: t("imageUpload.imageOnly"),
+			});
+			event.target.value = "";
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const dataUrl = e.target?.result as string;
+			if (dataUrl) {
+				onWebcamBackgroundImageChange?.(dataUrl);
+				toast.success(t("imageUpload.uploadSuccess"));
+			}
+		};
+		reader.onerror = () => {
+			toast.error(t("imageUpload.failedToUpload"), {
+				description: t("imageUpload.errorReading"),
+			});
+		};
+		reader.readAsDataURL(file);
 		event.target.value = "";
 	};
 
@@ -867,6 +912,85 @@ export function SettingsPanel({
 											step={1}
 											className="w-full"
 										/>
+									</div>
+								)}
+								{webcamLayoutPreset === "picture-in-picture" && (
+									<div className="mt-2 p-2 rounded-lg bg-white/5 border border-white/5 space-y-2">
+										<div>
+											<div className="text-[10px] font-medium text-slate-300">
+												{t("layout.webcamBackground")}
+											</div>
+											<div className="text-[9px] text-slate-500 mt-0.5">
+												{t("layout.webcamBackgroundHint")}
+											</div>
+										</div>
+										<Select
+											value={webcamBackgroundMode}
+											onValueChange={(value) =>
+												onWebcamBackgroundModeChange?.(value as WebcamBackgroundMode)
+											}
+										>
+											<SelectTrigger className="h-8 text-[10px] bg-[#1a1a1f] border-white/10 text-slate-200">
+												<SelectValue placeholder={t("layout.webcamBackgroundNone")} />
+											</SelectTrigger>
+											<SelectContent className="bg-[#1a1a1f] border-white/10 text-slate-200">
+												<SelectItem value="none" className="text-xs">
+													{t("layout.webcamBackgroundNone")}
+												</SelectItem>
+												<SelectItem value="blur" className="text-xs">
+													{t("layout.webcamBackgroundBlur")}
+												</SelectItem>
+												<SelectItem value="color" className="text-xs">
+													{t("layout.webcamBackgroundColor")}
+												</SelectItem>
+												<SelectItem value="image" className="text-xs">
+													{t("layout.webcamBackgroundImage")}
+												</SelectItem>
+											</SelectContent>
+										</Select>
+
+										{webcamBackgroundMode === "color" && (
+											<div className="p-1">
+												<Block
+													color={webcamBackgroundColor}
+													colors={colorPalette}
+													onChange={(color) => onWebcamBackgroundColorChange?.(color.hex)}
+													style={{
+														width: "100%",
+														borderRadius: "8px",
+													}}
+												/>
+											</div>
+										)}
+
+										{webcamBackgroundMode === "image" && (
+											<div className="space-y-2">
+												<input
+													type="file"
+													ref={webcamBackgroundFileInputRef}
+													onChange={handleWebcamBackgroundImageUpload}
+													accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+													className="hidden"
+												/>
+												<Button
+													type="button"
+													onClick={() => webcamBackgroundFileInputRef.current?.click()}
+													variant="outline"
+													className="w-full gap-2 bg-white/5 text-slate-200 border-white/10 hover:bg-[#34B27B] hover:text-white hover:border-[#34B27B] transition-all h-7 text-[10px]"
+												>
+													<Upload className="w-3 h-3" />
+													{webcamBackgroundImage
+														? t("layout.webcamBackgroundReplaceImage")
+														: t("layout.webcamBackgroundUploadImage")}
+												</Button>
+												{webcamBackgroundImage && (
+													<div
+														className="h-16 rounded-md border border-white/10 bg-cover bg-center"
+														style={{ backgroundImage: `url(${webcamBackgroundImage})` }}
+													/>
+												)}
+											</div>
+										)}
 									</div>
 								)}
 							</AccordionContent>

@@ -12,12 +12,16 @@ import type {
 } from "@/components/video-editor/types";
 import {
 	DEFAULT_CROP_REGION,
+	DEFAULT_WEBCAM_BACKGROUND_COLOR,
+	DEFAULT_WEBCAM_BACKGROUND_IMAGE,
+	DEFAULT_WEBCAM_BACKGROUND_MODE,
 	DEFAULT_WEBCAM_LAYOUT_PRESET,
 	DEFAULT_WEBCAM_MASK_SHAPE,
 	DEFAULT_WEBCAM_POSITION,
 	DEFAULT_WEBCAM_SIZE_PRESET,
 } from "@/components/video-editor/types";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
+import type { WebcamBackgroundMode } from "@/components/video-editor/types";
 
 // Undoable state — selection IDs are intentionally excluded (undoing a
 // selection change would feel surprising to the user).
@@ -30,6 +34,9 @@ export interface EditorState {
 	wallpaper: string;
 	shadowIntensity: number;
 	showBlur: boolean;
+	webcamBackgroundMode: WebcamBackgroundMode;
+	webcamBackgroundColor: string;
+	webcamBackgroundImage: string | null;
 	motionBlurAmount: number;
 	borderRadius: number;
 	padding: number;
@@ -49,6 +56,9 @@ export const INITIAL_EDITOR_STATE: EditorState = {
 	wallpaper: "/wallpapers/wallpaper1.jpg",
 	shadowIntensity: 0,
 	showBlur: false,
+	webcamBackgroundMode: DEFAULT_WEBCAM_BACKGROUND_MODE,
+	webcamBackgroundColor: DEFAULT_WEBCAM_BACKGROUND_COLOR,
+	webcamBackgroundImage: DEFAULT_WEBCAM_BACKGROUND_IMAGE,
 	motionBlurAmount: 0,
 	borderRadius: 0,
 	padding: 50,

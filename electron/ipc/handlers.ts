@@ -21,7 +21,8 @@ import {
 import { mainT } from "../i18n";
 import { RECORDINGS_DIR } from "../main";
 
-const PROJECT_FILE_EXTENSION = "openscreen";
+const PROJECT_FILE_EXTENSION = "recflow";
+const LEGACY_PROJECT_FILE_EXTENSION = "openscreen";
 const SHORTCUTS_FILE = path.join(app.getPath("userData"), "shortcuts.json");
 const RECORDING_SESSION_SUFFIX = ".session.json";
 const ALLOWED_IMPORT_VIDEO_EXTENSIONS = new Set([".webm", ".mp4", ".mov", ".avi", ".mkv"]);
@@ -818,11 +819,11 @@ export function registerIpcHandlers(
 			const result = await dialog.showOpenDialog({
 				title: mainT("dialogs", "fileDialogs.openProject"),
 				defaultPath: RECORDINGS_DIR,
-				filters: [
-					{
-						name: mainT("dialogs", "fileDialogs.openscreenProject"),
-						extensions: [PROJECT_FILE_EXTENSION],
-					},
+					filters: [
+						{
+							name: mainT("dialogs", "fileDialogs.openscreenProject"),
+							extensions: [PROJECT_FILE_EXTENSION, LEGACY_PROJECT_FILE_EXTENSION],
+						},
 					{ name: "JSON", extensions: ["json"] },
 					{ name: mainT("dialogs", "fileDialogs.allFiles"), extensions: ["*"] },
 				],

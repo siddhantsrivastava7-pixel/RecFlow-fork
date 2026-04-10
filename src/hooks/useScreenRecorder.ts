@@ -53,6 +53,7 @@ type UseScreenRecorderReturn = {
 	setMicrophoneDeviceId: (deviceId: string | undefined) => void;
 	webcamDeviceId: string | undefined;
 	setWebcamDeviceId: (deviceId: string | undefined) => void;
+	setWebcamPreviewStream: (stream: MediaStream | null) => void;
 	systemAudioEnabled: boolean;
 	setSystemAudioEnabled: (enabled: boolean) => void;
 	webcamEnabled: boolean;
@@ -102,6 +103,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const screenStream = useRef<MediaStream | null>(null);
 	const microphoneStream = useRef<MediaStream | null>(null);
 	const webcamStream = useRef<MediaStream | null>(null);
+	const webcamPreviewStream = useRef<MediaStream | null>(null);
 	const mixingContext = useRef<AudioContext | null>(null);
 	const recordingId = useRef<number>(0);
 	const accumulatedDurationMs = useRef(0);
@@ -193,6 +195,10 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		},
 		[t],
 	);
+
+	const setWebcamPreviewStream = useCallback((previewStream: MediaStream | null) => {
+		webcamPreviewStream.current = previewStream;
+	}, []);
 
 	const finalizeRecording = useCallback(
 		(
@@ -439,21 +445,34 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 
 			if (webcamEnabled) {
 				try {
-					webcamStream.current = await navigator.mediaDevices.getUserMedia({
-						audio: false,
-						video: webcamDeviceId
-							? {
-									deviceId: { exact: webcamDeviceId },
-									width: { ideal: WEBCAM_TARGET_WIDTH },
-									height: { ideal: WEBCAM_TARGET_HEIGHT },
-									frameRate: { ideal: WEBCAM_TARGET_FRAME_RATE, max: WEBCAM_TARGET_FRAME_RATE },
-								}
-							: {
-									width: { ideal: WEBCAM_TARGET_WIDTH },
-									height: { ideal: WEBCAM_TARGET_HEIGHT },
-									frameRate: { ideal: WEBCAM_TARGET_FRAME_RATE, max: WEBCAM_TARGET_FRAME_RATE },
-								},
-					});
+					const previewVideoTracks = webcamPreviewStream.current
+						?.getVideoTracks()
+						.filter((track) => track.readyState === "live");
+					if (previewVideoTracks && previewVideoTracks.length > 0) {
+						webcamStream.current = new MediaStream(previewVideoTracks.map((track) => track.clone()));
+					} else {
+						webcamStream.current = await navigator.mediaDevices.getUserMedia({
+							audio: false,
+							video: webcamDeviceId
+								? {
+										deviceId: { exact: webcamDeviceId },
+										width: { ideal: WEBCAM_TARGET_WIDTH },
+										height: { ideal: WEBCAM_TARGET_HEIGHT },
+										frameRate: {
+											ideal: WEBCAM_TARGET_FRAME_RATE,
+											max: WEBCAM_TARGET_FRAME_RATE,
+										},
+									}
+								: {
+										width: { ideal: WEBCAM_TARGET_WIDTH },
+										height: { ideal: WEBCAM_TARGET_HEIGHT },
+										frameRate: {
+											ideal: WEBCAM_TARGET_FRAME_RATE,
+											max: WEBCAM_TARGET_FRAME_RATE,
+										},
+									},
+						});
+					}
 				} catch (cameraError) {
 					console.warn("Failed to get webcam access:", cameraError);
 					if (webcamStream.current) {
@@ -723,6 +742,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		setMicrophoneDeviceId,
 		webcamDeviceId,
 		setWebcamDeviceId,
+		setWebcamPreviewStream,
 		systemAudioEnabled,
 		setSystemAudioEnabled,
 		webcamEnabled,

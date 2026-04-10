@@ -4,6 +4,7 @@ import type {
 	CropRegion,
 	SpeedRegion,
 	TrimRegion,
+	WebcamBackgroundMode,
 	WebcamLayoutPreset,
 	WebcamSizePreset,
 	ZoomRegion,
@@ -36,6 +37,9 @@ interface GifExporterConfig {
 	showShadow: boolean;
 	shadowIntensity: number;
 	showBlur: boolean;
+	webcamBackgroundMode?: WebcamBackgroundMode;
+	webcamBackgroundColor?: string;
+	webcamBackgroundImage?: string | null;
 	motionBlurAmount?: number;
 	borderRadius?: number;
 	padding?: number;
@@ -137,6 +141,9 @@ export class GifExporter {
 				showShadow: this.config.showShadow,
 				shadowIntensity: this.config.shadowIntensity,
 				showBlur: this.config.showBlur,
+				webcamBackgroundMode: this.config.webcamBackgroundMode,
+				webcamBackgroundColor: this.config.webcamBackgroundColor,
+				webcamBackgroundImage: this.config.webcamBackgroundImage,
 				motionBlurAmount: this.config.motionBlurAmount,
 				borderRadius: this.config.borderRadius,
 				padding: this.config.padding,

@@ -33,7 +33,12 @@
 		"defaultCamera": "Varsayılan Kamera",
 		"searching": "Aranıyor...",
 		"noneFound": "Kamera bulunamadı",
-		"unavailable": "Kamera kullanılamıyor"
+		"unavailable": "Kamera kullanılamıyor",
+		"previewLoading": "Starting camera...",
+		"previewUnavailable": "Preview unavailable",
+		"previewOff": "Preview off",
+		"showPreview": "Show webcam preview",
+		"hidePreview": "Hide webcam preview"
 	},
 	"sourceSelector": {
 		"loading": "Kaynaklar yükleniyor...",
